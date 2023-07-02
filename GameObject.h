@@ -10,9 +10,6 @@
 class GameObject 
 {
 public:
-    // GameObject(SDL_Renderer* renderer, float x, float y, float width, float height, Vector2 velocity)
-    //     : m_renderer(renderer), m_x(x), m_y(y), m_width(width), m_height(height), m_velocity(velocity) {}
-
     GameObject(SDL_Renderer *renderer, float x, float y);
 
     GameObject(SDL_Renderer *renderer, float x, float y, int w, int h);
@@ -25,11 +22,11 @@ public:
 
     void Render();
 
+    void RenderTex();
+
     Vector2 GetVelocity();
 
     SDL_Rect* GetRectRef();
-
-    // SDL_Rect *GetColliderRef();
 
     void SetPosition(float x, float y);
 
@@ -37,13 +34,14 @@ public:
 
     void SetVelocity(float x, float y);
 
-    // void SetCollider(SDL_Rect rect);
+    void SetVelocity(Vector2 v2);
 
+    void SetTexture(SDL_Texture* &tex);
+
+    void SetTextureBySurface(SDL_Surface* &surf);
 
 private:
     void UpdateRect();
-
-    // void UpdateCollider();
 
     SDL_Renderer* m_renderer;
     float m_x;
@@ -54,5 +52,8 @@ private:
 
     SDL_Rect* m_rect;
     SDL_Rect* m_collider = nullptr;
+
+    SDL_Texture* m_texture = nullptr;
+
 };
 
