@@ -15,22 +15,31 @@ LIBRARY_PATHS = -L C:/SDL2-w64/lib
 # -Wl,-subsystem,windows gets rid of the console window
 COMPILER_FLAGS = -w -g # -Wl,-subsystem,windows
 
+BUILD_FLAGS = -w -Wl,-subsystem,windows
+
 #LINKER_FLAGS specifies the libraries we're linking against
 LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf
 
 #OBJ_NAME specifies the name of our exectuable
-OBJ_NAME = sdl_pong
+DG_OBJ_NAME = sdl_pong_dg
+
+BLD_OBJ_NAME = sdl_pong
 
 # Valgrind command
 DRMEMORY_CMD = drmemory
 
-
 #This is the target that compiles our executable
 compile : $(OBJS)
-	$(CC) $(OBJS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME)
+	$(CC) $(OBJS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(DG_OBJ_NAME)
 
-run: compile
-	.\$(OBJ_NAME).exe
+build : $(OBJS)
+	$(CC) $(OBJS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(BUILD_FLAGS) $(LINKER_FLAGS) -o $(BLD_OBJ_NAME)
+
+run_dg: compile
+	.\$(DG_OBJ_NAME).exe
+
+run_bld: build
+	.\$(BLD_OBJ_NAME).exe
 
 drmemory: compile
 	$(DRMEMORY_CMD) $(OBJ_NAME).exe
