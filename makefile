@@ -19,7 +19,7 @@ COMPILER_FLAGS = -w -g # -Wl,-subsystem,windows
 LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf
 
 #OBJ_NAME specifies the name of our exectuable
-OBJ_NAME = main
+OBJ_NAME = sdl_pong
 
 # Valgrind command
 DRMEMORY_CMD = drmemory
@@ -30,7 +30,7 @@ compile : $(OBJS)
 	$(CC) $(OBJS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME)
 
 run: compile
-	.\main.exe
+	.\$(OBJ_NAME).exe
 
 drmemory: compile
 	$(DRMEMORY_CMD) $(OBJ_NAME).exe
