@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include <unordered_set>
 
@@ -23,40 +24,163 @@ const int FONT_SIZE = 50;
 
 bool PAUSED = false;
 
-int P1_SCORE;
-int P2_SCORE;
+bool GAME_END = false;
 
+int P1_SCORE = 99;
+int P2_SCORE = 99;
 
 TTF_Font* g_font;
 
 SDL_Window* window;
 SDL_Renderer* renderer;
 
+// For scoreboard textures
 SDL_Surface* sb1Surface;
 SDL_Surface* sb2Surface;
 
+// For announcer textures
 SDL_Surface* annSurface;
 
-// GameObject* p1 = nullptr;
-// GameObject* p2;
 
-// GameObject* net;
-// GameObject* bx0;
-// GameObject* bx1;
-// GameObject* by0;
-// GameObject* by1;
+// DYNAMIC ALLOC YAP VE GLOBAL KULLAN
+GameObject* p1 = nullptr;
+GameObject* p2 = nullptr;
 
-// GameObject* ball;
-// GameObject* scoreboard_p1;
-// GameObject* scoreboard_p2;
+GameObject* net = nullptr;
+GameObject* bx0 = nullptr;
+GameObject* bx1 = nullptr;
+GameObject* by0 = nullptr;
+GameObject* by1 = nullptr;
 
-// GameObject* announceText;
+GameObject* ball = nullptr;
+GameObject* scoreboard_p1 = nullptr;
+GameObject* scoreboard_p2 = nullptr;
 
+GameObject* announceText = nullptr;
 
+SDL_Rect* p1_r = nullptr;
+SDL_Rect* p2_r = nullptr;
 
+SDL_Rect* ball_r = nullptr;
+
+SDL_Rect* border_x0_r = nullptr;
+SDL_Rect* border_x1_r = nullptr;
+SDL_Rect* border_y0_r = nullptr;
+SDL_Rect* border_y1_r = nullptr;
+
+std::vector<GameObject*> objectList;
+
+Vector2 initial_ball_velo(-0.5f, 0.0f);
 
 // Create a set to store the keys that are currently being held down
 std::unordered_set<SDL_Keycode> held_keys;
+
+void scoreUpdate(SDL_Surface* &surface, GameObject &obj, int score)
+{
+    if(score > 9) score = 9;
+    else if(score < 0) score = 0;
+    SDL_FreeSurface(surface);
+    std::string str = std::to_string(score);
+
+    surface = TTF_RenderText_Solid(g_font, str.c_str(), {0xff, 0xff, 0xff});
+    if (!surface) 
+    {
+        SDL_Log("SDL_Surface could not initialize! SDL_Error: %s", SDL_GetError());
+        exit(0);
+    }
+    obj.SetTextureBySurface(surface);
+}
+
+void ClearGameObjects()
+{
+    for(int i = 0; i < objectList.size(); ++i)
+    {
+        delete objectList[i];
+    }
+    objectList.clear();
+}
+
+void InitGameObj(GameObject* &obj, float x, float y, int w, int h, float v_x=0.0f, float v_y=0.0f)
+{
+    if(obj != nullptr)
+        delete obj;
+    obj = new GameObject(renderer, x, y, w, h, v_x, v_y);
+    if(obj)
+        objectList.push_back(obj);
+
+}
+
+void StartGame()
+{
+    // if(!objectList.empty())
+    // {
+    //     std::cout << "objectList is not empty" << std::endl;
+    // }
+    InitGameObj(p1, 30.0f, 150.0f, 10, 200);
+    InitGameObj(p2, SCREEN_WIDTH - 30.0f, 150.0f, 10, 200);
+
+    InitGameObj(net, SCREEN_WIDTH/2.0f, SCREEN_HEIGHT/2.0f, 10, SCREEN_HEIGHT);
+    InitGameObj(bx0, 
+        SCREEN_WIDTH/2.0f, 
+        0.0f, 
+        SCREEN_WIDTH, 
+        4);
+    InitGameObj(bx1, 
+        SCREEN_WIDTH/2.0f, 
+        SCREEN_HEIGHT, 
+        SCREEN_WIDTH, 
+        4);
+    InitGameObj(by0, 
+        0.0f, 
+        SCREEN_HEIGHT/2.0f, 
+        4, 
+        SCREEN_HEIGHT);
+    InitGameObj(by1, 
+        SCREEN_WIDTH, 
+        SCREEN_HEIGHT/2.0f, 
+        4, 
+        SCREEN_HEIGHT);
+
+    InitGameObj(ball, 
+        SCREEN_WIDTH / 2.0f, 
+        SCREEN_HEIGHT / 2.0f,
+        10,
+        10);
+    InitGameObj(scoreboard_p1, 
+        (SCREEN_WIDTH / 2.0f) - (FONT_SIZE),
+        50,
+        FONT_SIZE,
+        FONT_SIZE);
+    InitGameObj(scoreboard_p2, 
+        (SCREEN_WIDTH / 2.0f) + (FONT_SIZE),
+        50,
+        FONT_SIZE,
+        FONT_SIZE);
+    InitGameObj(announceText, 
+        (SCREEN_WIDTH / 4.0f),
+        (SCREEN_HEIGHT / 2.0f),
+        FONT_SIZE*10,
+        FONT_SIZE);
+
+    p1_r = p1->GetRectRef();
+    p2_r = p2->GetRectRef();
+    ball_r = ball->GetRectRef();
+    border_x0_r = bx0->GetRectRef();
+    border_x1_r = bx1->GetRectRef();
+    border_y0_r = by0->GetRectRef();
+    border_y1_r = by1->GetRectRef();
+
+    ball->SetVelocity(initial_ball_velo);
+
+    P1_SCORE = 0;
+    P2_SCORE = 0;
+
+    scoreUpdate(sb1Surface, *scoreboard_p1, P1_SCORE);
+    scoreUpdate(sb2Surface, *scoreboard_p2, P2_SCORE);
+
+    PAUSED = false;
+    
+}
 
 void PauseSet(bool isPaused)
 {
@@ -110,22 +234,6 @@ int init()
 
 }
 
-void scoreUpdate(SDL_Surface* &surface, GameObject &obj, int score)
-{
-    if(score > 9) score = 9;
-    else if(score < 0) score = 0;
-    SDL_FreeSurface(surface);
-    std::string str = std::to_string(score);
-
-    surface = TTF_RenderText_Solid(g_font, str.c_str(), {0xff, 0xff, 0xff});
-    if (!surface) 
-    {
-        SDL_Log("SDL_Surface could not initialize! SDL_Error: %s", SDL_GetError());
-        exit(0);
-    }
-    obj.SetTextureBySurface(surface);
-}
-
 void announceUpdate(SDL_Surface* &surface, GameObject &obj, std::string text)
 {
     SDL_FreeSurface(surface);
@@ -139,107 +247,12 @@ void announceUpdate(SDL_Surface* &surface, GameObject &obj, std::string text)
     obj.SetTextureBySurface(surface);
 }
 
-// void StartGame()
-// {
-//     P1_SCORE = 0;
-//     P2_SCORE = 0;
-
-//     scoreUpdate(sb1Surface, scoreboard_p1, P1_SCORE);
-//     scoreUpdate(sb2Surface, scoreboard_p2, P2_SCORE);
-
-//     // init velo
-//     Vector2 initial_ball_velo(-0.5f, 0.0f);
-
-//     ball.SetVelocity(initial_ball_velo);
-// }
-
 int main(int argc, char* args[]) 
 {
     if(init() == 1)
         return 1;    
 
-    // PLAYER OBJECTS;
-    GameObject p1(renderer, 30.0f, 150.0f, 10, 200);
-    
-    GameObject p2(renderer, SCREEN_WIDTH - 30.0f, 150.0f, 10, 200);
-
-    // ENVIRONMENT
-    GameObject net(renderer, SCREEN_WIDTH/2.0f, SCREEN_HEIGHT/2.0f, 10, SCREEN_HEIGHT);
-    GameObject bx0(renderer, 
-        SCREEN_WIDTH/2.0f, 
-        0.0f, 
-        SCREEN_WIDTH, 
-        4
-    );
-    GameObject bx1(renderer, 
-        SCREEN_WIDTH/2.0f, 
-        SCREEN_HEIGHT, 
-        SCREEN_WIDTH, 
-        4
-    );
-    GameObject by0(renderer, 
-        0.0f, 
-        SCREEN_HEIGHT/2.0f, 
-        4, 
-        SCREEN_HEIGHT
-    );
-    GameObject by1(renderer, 
-        SCREEN_WIDTH, 
-        SCREEN_HEIGHT/2.0f, 
-        4, 
-        SCREEN_HEIGHT
-    );
-
-    // BALL
-    GameObject ball(renderer, 
-        SCREEN_WIDTH / 2.0f, 
-        SCREEN_HEIGHT / 2.0f,
-        10,
-        10
-    );
-
-    // HUD
-    GameObject scoreboard_p1(renderer,
-        (SCREEN_WIDTH / 2.0f) - (FONT_SIZE),
-        50,
-        FONT_SIZE,
-        FONT_SIZE
-    );
-    GameObject scoreboard_p2(renderer,
-        (SCREEN_WIDTH / 2.0f) + (FONT_SIZE),
-        50,
-        FONT_SIZE,
-        FONT_SIZE
-    );
-
-    GameObject announceText(renderer,
-        (SCREEN_WIDTH / 4.0f),
-        (SCREEN_HEIGHT / 2.0f),
-        FONT_SIZE*10,
-        FONT_SIZE
-    );
-
-    P1_SCORE = 0;
-    P2_SCORE = 0;
-
-    scoreUpdate(sb1Surface, scoreboard_p1, P1_SCORE);
-    scoreUpdate(sb2Surface, scoreboard_p2, P2_SCORE);
-
-    // init velo
-    Vector2 initial_ball_velo(-0.5f, 0.0f);
-
-    ball.SetVelocity(initial_ball_velo);
-
-    // params
-    SDL_Rect* p1_r = p1.GetRectRef();
-    SDL_Rect* p2_r = p2.GetRectRef();
-
-    SDL_Rect* ball_r = ball.GetRectRef();
-
-    SDL_Rect* border_x0_r = bx0.GetRectRef();
-    SDL_Rect* border_x1_r = bx1.GetRectRef();
-    SDL_Rect* border_y0_r = by0.GetRectRef();
-    SDL_Rect* border_y1_r = by1.GetRectRef();
+    StartGame();
 
     // Main loop
     bool quit = false;
@@ -280,19 +293,43 @@ int main(int argc, char* args[])
             }
         }
 
-        
-
         NOW = SDL_GetPerformanceCounter();
 
         DELTA_TIME = (float)((NOW - LAST)*1000 / (float)SDL_GetPerformanceFrequency() );
 
-        // BOK
-        if(PAUSED)
+        if(GAME_END && !PAUSED)
+        {
+            GAME_END = false;
+            StartGame();
             continue;
+        }
 
+        if(P2_SCORE == 2 && !GAME_END)
+        {
+            announceText->SetPosition(3.0f*SCREEN_WIDTH / 4.0f, SCREEN_HEIGHT / 2.0f);
+            announceUpdate(annSurface, *announceText, "P2 WON, Press any button");
+            PauseSet(true);
+            GAME_END = true;
+        }
+        else if(P1_SCORE == 2 && !GAME_END)
+        {
+            announceText->SetPosition(SCREEN_WIDTH / 4.0f, SCREEN_HEIGHT / 2.0f);
+            announceUpdate(annSurface, *announceText, "P1 WON, Press any button");
+            PauseSet(true);
+            GAME_END = true;
+        }
+
+        
         // COLLISION REALM
         bool p1_col = SDL_HasIntersection(ball_r, p1_r);
         bool p2_col = SDL_HasIntersection(ball_r, p2_r);
+
+        bool p1_up_wall_col = SDL_HasIntersection(p1_r, border_x0_r);
+        bool p1_down_wall_col = SDL_HasIntersection(p1_r, border_x1_r);
+
+        bool p2_up_wall_col = SDL_HasIntersection(p2_r, border_x0_r);
+        bool p2_down_wall_col = SDL_HasIntersection(p2_r, border_x1_r);
+
 
         bool up_col = SDL_HasIntersection(ball_r, border_x0_r);
         bool down_col = SDL_HasIntersection(ball_r, border_x1_r);
@@ -300,7 +337,7 @@ int main(int argc, char* args[])
         bool p2_score = SDL_HasIntersection(ball_r, border_y0_r);
         bool p1_score = SDL_HasIntersection(ball_r, border_y1_r);
 
-        auto velo = ball.GetVelocity();
+        auto velo = ball->GetVelocity();
 
         if((p1_col && velo.x < 0) || (p2_col && velo.x > 0))
         {
@@ -308,102 +345,107 @@ int main(int argc, char* args[])
             velo.y = RelativeRNG(velo.y, 20, 40);
             // std::cout << velo << std::endl;
 
-            ball.SetVelocity(velo.x * (-1.0f), velo.y);
+            ball->SetVelocity(velo.x * (-1.0f), velo.y);
         }
         if((up_col && velo.y < 0) || (down_col && velo.y > 0))
         {
-            ball.SetVelocity(velo.x, velo.y * (-1.0f));
+            ball->SetVelocity(velo.x, velo.y * (-1.0f));
         }
-        if(p2_score || p1_score)
+        if(p2_score)
         {
-            ball.SetPosition(SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f);
-            if(p2_score)
-            {
-                ball.SetVelocity(initial_ball_velo);
-                scoreUpdate(sb2Surface, scoreboard_p2, ++P2_SCORE);
-                if(P2_SCORE == 3)
-                {
-                    announceText.SetPosition(SCREEN_WIDTH / 4.0f, SCREEN_HEIGHT / 2.0f);
-                    announceUpdate(annSurface, announceText, "P2 WON, Press any button");
-                    PauseSet(true);
-                }
-            }
-            else if(p1_score)
-            {
-                ball.SetVelocity(initial_ball_velo.x*-1, initial_ball_velo.y);
-
-                scoreUpdate(sb1Surface, scoreboard_p1, ++P1_SCORE);
-                if(P1_SCORE == 3)
-                {
-                    announceText.SetPosition(3*SCREEN_WIDTH / 4.0f, SCREEN_HEIGHT / 2.0f);
-                    announceUpdate(annSurface, announceText, "P1 WON, Press any button");
-                    PauseSet(true);
-                }
-            }
-            
+            std::cout << "P2 SCORE!" << std::endl;
+            ball->SetPosition(SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f);
+            ball->SetVelocity(initial_ball_velo);
+            scoreUpdate(sb2Surface, *scoreboard_p2, ++P2_SCORE);
+        }
+        else if(p1_score)
+        {
+            std::cout << "P1 SCORE!" << std::endl;
+            ball->SetPosition(SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f);
+            ball->SetVelocity(initial_ball_velo.x*-1, initial_ball_velo.y);
+            scoreUpdate(sb1Surface, *scoreboard_p1, ++P1_SCORE);
         }
 
         // INPUTS
-        p1.SetVelocity(0.0f, 0.0f);
-        p2.SetVelocity(0.0f, 0.0f);
+        p1->SetVelocity(0.0f, 0.0f);
+        p2->SetVelocity(0.0f, 0.0f);
 
-        if(is_key_down(SDLK_w))
+        // PLAYER INPUT
+
+        // GO UP
+        if(!p1_up_wall_col && is_key_down(SDLK_w))
         {
-            p1.SetVelocity(0.0f, -0.5f);
-            p2.SetVelocity(0.0f, -0.5f);
-        }
-        if(is_key_down(SDLK_s))
-        {
-            p1.SetVelocity(0.0f, 0.5f);
-            p2.SetVelocity(0.0f, 0.5f);
+            p1->SetVelocity(0.0f, -0.5f);
         }
 
-        // BOOST
-        // if(is_key_down(SDLK_SPACE) && (p1_col || p2_col))
-        // {
-        //     std::cout << "power!" << std::endl;
-        //     auto velo = ball.GetVelocity();
-        //     ball.SetVelocity(velo.x * 5.0f, velo.y);
-        // }
+        // GO DOWN
+        if(!p1_down_wall_col && is_key_down(SDLK_s))
+        {
+            p1->SetVelocity(0.0f, 0.5f);
+        }
+        if(is_key_down(SDLK_r))
+        {
+            StartGame();
+            continue;
+        }
+
+        // AI INPUT
+        float ball_x = ball->GetPosition().x;
+        float ball_y = ball->GetPosition().y;
+
+        float p2_x = p2->GetPosition().x;
+        float p2_y = p2->GetPosition().y;
+
+        float dist = std::abs(ball_x-p2_x);
+
+        // GO UP
+        if(!p2_up_wall_col && p2_y > ball_y && dist < 500.0f)
+            p2->SetVelocity(0.0f, -0.5f);
+        // GO DOWN
+        else if(!p2_down_wall_col && p2_y < ball_y && dist < 500.0f)
+            p2->SetVelocity(0.0f, 0.5f);
 
         if(!PAUSED)
         {
-            ball.Update(DELTA_TIME);
+            ball->Update(DELTA_TIME);
 
-            p1.Update(DELTA_TIME);
-            p2.Update(DELTA_TIME);
+            p1->Update(DELTA_TIME);
+            p2->Update(DELTA_TIME);
         }
 
         // RENDER
 
-        // FIRTS:::Clear the screen
+        // FIRST:::Clear the screen
         SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
         SDL_RenderClear(renderer);
 
         // Render border
-        bx0.Render();
-        bx1.Render();
-        by0.Render();
-        by1.Render();
+        bx0->Render();
+        bx1->Render();
+        by0->Render();
+        by1->Render();
 
         // Render player rec
-        p1.Render();
-        p2.Render();
+        p1->Render();
+        p2->Render();
 
         // Render net
-        net.Render();
+        net->Render();
 
         // Render ball
-        ball.Render();
+        ball->Render();
 
-        scoreboard_p1.RenderTex();
-        scoreboard_p2.RenderTex();
+        // Render texture
+        scoreboard_p1->RenderTex();
+        scoreboard_p2->RenderTex();
 
-        announceText.RenderTex();
+        announceText->RenderTex();
 
         // Update the screen
         SDL_RenderPresent(renderer);
     }
+    // Clear every active game object
+    // ClearGameObjects();
 
     // Cleanup and exit
     SDL_FreeSurface(sb1Surface);

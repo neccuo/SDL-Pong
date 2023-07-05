@@ -24,6 +24,8 @@ public:
 
     void RenderTex();
 
+    Vector2 GetPosition();
+
     Vector2 GetVelocity();
 
     SDL_Rect* GetRectRef();

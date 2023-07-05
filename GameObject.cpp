@@ -3,34 +3,40 @@
 GameObject::GameObject(SDL_Renderer* renderer, float x, float y)
 {
     m_renderer = renderer;
+    m_rect = new SDL_Rect();
+
     SetPosition(x, y);
     SetScale(1.0f, 1.0f);
     SetVelocity(0.0f, 0.0f);
 
-    m_rect = new SDL_Rect();
-    UpdateRect();
+    // m_rect = new SDL_Rect();
+    // UpdateRect();
 }
 
 GameObject::GameObject(SDL_Renderer* renderer, float x, float y, int w, int h)
 {
     m_renderer = renderer;
+    m_rect = new SDL_Rect();
+
     SetPosition(x, y);
     SetScale(w, h);
     SetVelocity(0.0f, 0.0f);
 
-    m_rect = new SDL_Rect();
-    UpdateRect();
+    // m_rect = new SDL_Rect();
+    // UpdateRect();
 }
 
 GameObject::GameObject(SDL_Renderer* renderer, float x, float y, int w, int h, float v_x, float v_y)
 {
     m_renderer = renderer;
+    m_rect = new SDL_Rect();
+
     SetPosition(x, y);
     SetScale(w, h);
     SetVelocity(v_x, v_y);
 
-    m_rect = new SDL_Rect();
-    UpdateRect();
+    // m_rect = new SDL_Rect();
+    // UpdateRect();
 }
 
 GameObject::~GameObject()
@@ -61,6 +67,11 @@ void GameObject::RenderTex()
     SDL_RenderCopy(m_renderer, m_texture, NULL, m_rect);
 }
 
+Vector2 GameObject::GetPosition()
+{
+    return Vector2(m_x, m_y);
+}
+
 Vector2 GameObject::GetVelocity()
 {
     return m_velocity;
@@ -75,23 +86,31 @@ void GameObject::SetPosition(float x, float y)
 {
     m_x = x;
     m_y = y;
+    UpdateRect();
 }
 
 void GameObject::SetScale(int x, int y) 
 {
     m_width = x;
     m_height = y;
+    UpdateRect();
 }
 
 void GameObject::SetVelocity(float x, float y) 
 {
     m_velocity.x = x;
     m_velocity.y = y;
+
+    // No need for update
+    // UpdateRect();
 }
 
 void GameObject::SetVelocity(Vector2 v2)
 {
     m_velocity = v2;
+
+    // No need for update
+    // UpdateRect();
 }
 
 void GameObject::SetTexture(SDL_Texture* &tex)
