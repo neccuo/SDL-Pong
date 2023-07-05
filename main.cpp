@@ -304,14 +304,14 @@ int main(int argc, char* args[])
             continue;
         }
 
-        if(P2_SCORE == 2 && !GAME_END)
+        if(P2_SCORE == 5 && !GAME_END)
         {
             announceText->SetPosition(3.0f*SCREEN_WIDTH / 4.0f, SCREEN_HEIGHT / 2.0f);
             announceUpdate(annSurface, *announceText, "P2 WON, Press any button");
             PauseSet(true);
             GAME_END = true;
         }
-        else if(P1_SCORE == 2 && !GAME_END)
+        else if(P1_SCORE == 5 && !GAME_END)
         {
             announceText->SetPosition(SCREEN_WIDTH / 4.0f, SCREEN_HEIGHT / 2.0f);
             announceUpdate(annSurface, *announceText, "P1 WON, Press any button");
@@ -400,10 +400,10 @@ int main(int argc, char* args[])
 
         // GO UP
         if(!p2_up_wall_col && p2_y > ball_y && dist < 500.0f)
-            p2->SetVelocity(0.0f, -0.5f);
+            p2->SetVelocity(0.0f, -0.3f);
         // GO DOWN
         else if(!p2_down_wall_col && p2_y < ball_y && dist < 500.0f)
-            p2->SetVelocity(0.0f, 0.5f);
+            p2->SetVelocity(0.0f, 0.3f);
 
         if(!PAUSED)
         {
